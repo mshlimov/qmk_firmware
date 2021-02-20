@@ -529,6 +529,7 @@ void SDHC0_Handler               ( void );
  * \brief Configuration of the Cortex-M4 Processor and Core Peripherals
  */
 
+#undef LITTLE_ENDIAN
 #define LITTLE_ENDIAN          1        
 #define __CM4_REV              1         /*!< Core revision r0p1 */
 #define __DEBUG_LVL            3         /*!< Full debug plus DWT data matching */
