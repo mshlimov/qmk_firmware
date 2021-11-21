@@ -47,9 +47,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [1] = LAYOUT(
         _______, KC_F13,  KC_F14,  KC_F15,  KC_F16,  KC_F17,  KC_F18,  KC_F19,  KC_F20,  KC_F21,  KC_F22,  KC_F23,  KC_F24,             KC_MUTE, KC_ASTG, _______, \
         _______, TG(3), TG(2), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPLY, KC_MSTP, KC_VOLU, \
-        _______, RGB_SPD, RGB_VAI, RGB_SPI, RGB_HUI, RGB_SAI, _______, U_T_AUTO,U_T_AGCR,_______, _______, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
-        _______, RGB_RMOD,RGB_VAD, RGB_MOD, RGB_HUD, RGB_SAD, _______, _______, _______, _______, _______, _______, _______, \
-        _______, RGB_TOG, _______, _______, _______, MD_BOOT, NK_TOGG, _______, _______, _______, _______, _______,                              DBG_TOG, \
+        _______, RGB_MOD, RGB_SPI, RGB_HUI, RGB_SAI, RGB_VAI, _______, U_T_AUTO,U_T_AGCR,_______, _______, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
+        _______, RGB_RMOD, RGB_SPD, RGB_HUD, RGB_SAD, RGB_VAD, _______, _______, _______, _______, _______, _______, _______, \
+        _______, RGB_TOG, ROUT_TG, ROUT_FM, _______, MD_BOOT, NK_TOGG, _______, _______, _______, _______, _______,                              DBG_TOG, \
         _______, _______, _______,                   _______,                            _______, _______, _______, _______,            DBG_MTRX, DBG_KBD, DBG_MOU \
     ),
     [2] = LAYOUT(
@@ -100,7 +100,7 @@ const uint8_t PROGMEM ledmap[][DRIVER_LED_TOTAL][3] = {
         _______, RED, RED, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   BLUE, BLUE, BLUE, \
         _______, TEAL, TEAL, TEAL, TEAL, TEAL, _______, CORAL,CORAL,_______, _______, _______, _______, _______,   BLUE, BLUE, BLUE, \
         _______, TEAL, TEAL, TEAL,  TEAL, TEAL,  _______, _______, _______, _______, _______, _______, _______, \
-        _______, TEAL, _______, _______, _______, CORAL, CORAL, _______, _______, _______, _______, _______,                             PINK, \
+        _______, GREEN,GREEN, GREEN, _______, CORAL, CORAL, _______, _______, _______, _______, _______,                             PINK, \
         _______, _______, _______, _______, _______, _______, _______, _______,            PINK, PINK, PINK \
     },
     [2] = {
@@ -133,7 +133,7 @@ void matrix_init_user(void) {
     idle_second_counter = 0;                            // Counter for number of seconds keyboard has been idle.
     key_event_counter = 0;                              // Counter to determine if keys are being held, neutral at 0.
     rgb_time_out_seconds = RGB_DEFAULT_TIME_OUT;        // RGB timeout initialized to its default configure in keymap.h
-    rgb_time_out_enable = true;                        // Disable RGB timeout by default. Enable using toggle key.
+    rgb_time_out_enable = true;                        // Enable RGB timeout by default. Enable using toggle key.
     rgb_time_out_user_value = true;                    // Has to have the same initial value as rgb_time_out_enable.
     rgb_enabled_flag = true;                            // Initially, keyboard RGB is enabled. Change to false config.h initializes RGB disabled.
     rgb_time_out_fast_mode_enabled = false;             // RGB timeout fast mode disabled initially.
@@ -155,6 +155,7 @@ void matrix_scan_user(void) {
             idle_second_counter = 0;
         } else if (timer_elapsed(idle_timer) > MILLISECONDS_IN_SECOND) {
             idle_second_counter++;
+	    if (idle_second_counter % 10 == 0) dprintf("idle seconds = %d \r\n", idle_second_counter);
             idle_timer = timer_read();
         }
 
@@ -243,30 +244,36 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 case LED_FLAG_ALL: {
                     rgb_matrix_set_flags(LED_FLAG_KEYLIGHT | LED_FLAG_MODIFIER | LED_FLAG_INDICATOR);
                     rgb_matrix_set_color_all(0, 0, 0);
+		    dprint("RGB Toggle: Underglow LEDs off, Keycap LEDs on\r\n");
                   }
                   break;
                 case (LED_FLAG_KEYLIGHT | LED_FLAG_MODIFIER | LED_FLAG_INDICATOR): {
                     rgb_matrix_set_flags(LED_FLAG_UNDERGLOW);
                     rgb_matrix_set_color_all(0, 0, 0);
+		    dprint("RGB Toggle: Underglow LEDs on, Keycap LEDs off\r\n");
                   }
                   break;
                 case LED_FLAG_UNDERGLOW: {
                     rgb_matrix_set_flags(LED_FLAG_NONE);
                     rgb_matrix_disable_noeeprom();
+		    dprint("RGB Toggle: No LEDs on\r\n");
                   }
                   break;
                 default: {
                     rgb_matrix_set_flags(LED_FLAG_ALL);
                     rgb_matrix_enable_noeeprom();
+		    dprint("RGB Toggle: All LEDs on\r\n");
                   }
                   break;
               }
             }
             return false;
         case ROUT_TG:
+	    if (record->event.pressed){
             // Toggle idle LED timeout on or off
-            rgb_time_out_enable = !rgb_time_out_enable;
-            rgb_time_out_user_value = rgb_time_out_enable;
+	            TOGGLE_FLAG_AND_PRINT(rgb_time_out_enable, "RGB Timeout");
+        	    rgb_time_out_user_value = rgb_time_out_enable;
+	    }
             return false;
         case ROUT_VI:
             // Increase idle LED timeout value in seconds
@@ -285,15 +292,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
         case ROUT_FM:
+	    if (record->event.pressed){
                 if (rgb_time_out_fast_mode_enabled) {
                     rgb_time_out_seconds = rgb_time_out_saved_seconds;
                 } else {
                     rgb_time_out_saved_seconds = rgb_time_out_seconds;
                     rgb_time_out_seconds = RGB_FAST_MODE_TIME_OUT;
                 }
-                rgb_time_out_fast_mode_enabled = !rgb_time_out_fast_mode_enabled;
-                return false;
-
+                TOGGLE_FLAG_AND_PRINT(rgb_time_out_fast_mode_enabled, "RGB Timeout Fast Mode");
+	    }
+            return false;
         default:
             return true; //Process all other keycodes normally
     }
