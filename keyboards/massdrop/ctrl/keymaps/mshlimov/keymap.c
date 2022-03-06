@@ -431,20 +431,25 @@ void rgb_matrix_indicators_user(void) {
     set_layer_color(get_highest_layer(layer_state));
 
     if (leader_success_blink || leader_fail_blink) {
-	if(timer_elapsed(blink_timer) > 400) {
+    	if(timer_elapsed(blink_timer) > 30) {
 	  isLeaderLedOn = !isLeaderLedOn;
 	  blink_timer = timer_read();
-	}
-	if(timer_elapsed(blinking_timer) > 1600){
-		leader_success_blink = false;
-		leader_fail_blink = false;
-		isLeaderLedOn = false;
-	}
+	}	
 	if (isLeaderLedOn) {
 	  for (int i=0; i < DRIVER_LED_TOTAL; i++) {
 		  if (leader_success_blink) rgb_matrix_set_color(i, 0x00, 0xFF, 0x00); 
 		  if (leader_fail_blink) rgb_matrix_set_color(i, 0xFF, 0xFF, 0xFF); 
 	  }
+	} else {
+	  for (int i=0; i < DRIVER_LED_TOTAL; i++) {
+		rgb_matrix_set_color(i, 0x00, 0x00, 0x00); 
+	  }
 	}
+    }
+    
+    if(timer_elapsed(blinking_timer) > 500){
+	leader_success_blink = false;
+	leader_fail_blink = false;
+	isLeaderLedOn = false;
     }
 }
