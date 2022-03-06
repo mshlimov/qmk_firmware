@@ -1,31 +1,33 @@
 #include "keymap.h" 
 #include "matrix.h"
 
+// Static variables used to track keyboard idle time and shut-off LEDs
 static uint16_t idle_timer;             // Idle LED timeout timer
 static uint8_t idle_second_counter;     // Idle LED seconds counter, counts seconds not milliseconds
 static uint8_t key_event_counter;       // This counter is used to check if any keys are being held
 
 enum ctrl_keycodes {
-    U_T_AUTO = SAFE_RANGE, //USB Extra Port Toggle Auto Detect / Always Active
-    U_T_AGCR,              //USB Toggle Automatic GCR control
-    DBG_TOG,               //DEBUG Toggle On / Off
-    DBG_MTRX,              //DEBUG Toggle Matrix Prints
-    DBG_KBD,               //DEBUG Toggle Keyboard Prints
-    DBG_MOU,               //DEBUG Toggle Mouse Prints
-    MD_BOOT,               //Restart into bootloader after hold timeout
+    U_T_AUTO = SAFE_RANGE, // USB Extra Port Toggle Auto Detect / Always Active
+    U_T_AGCR,              // USB Toggle Automatic GCR control
+    DBG_TOG,               // DEBUG Toggle On / Off
+    DBG_MTRX,              // DEBUG Toggle Matrix Prints
+    DBG_KBD,               // DEBUG Toggle Keyboard Prints
+    DBG_MOU,               // DEBUG Toggle Mouse Prints
+    MD_BOOT,               // Restart into bootloader after hold timeout
     ROUT_TG,               // Timeout Toggle. Toggle idle LED time out on or off
     ROUT_VI,               // Timeout Value Increase. Increase idle time out before LED disabled
     ROUT_VD,               // Timeout Value Decrease. Decrease idle time out before LED disabled
     ROUT_FM,               // RGB timeout fast mode toggle
-    LD_MAC,
-    LD_PC,
+    LD_MAC,                // Put leader key sequences in MAC mode
+    LD_PC,                 // Put leader key sequences in PC mode
 
 };
 
 
 
+// Combo Key Definitions
 enum combos {
-	LK_BSPC,
+	LK_BSPC, // L and K at the same time send backspace
 };
 
 
@@ -38,9 +40,9 @@ combo_t key_combos[COMBO_COUNT] = {
 // Tap Dance definitions
 
 enum td_keycodes {
-	TD_CAPS,
-	TD_LCTL,
-	TD_FN,
+	TD_CAPS, // single tap is LCTRL, double tap toggles CAPS
+	TD_LCTL, //double tap sends CTRL+T to open firefox, single tap is LCTL
+	TD_FN, //single tap is leader, double tap enables layer 1, single hold momentarily enables layer 1
 };
 
 typedef enum {
@@ -80,7 +82,7 @@ void td_fn_finished(qk_tap_dance_state_t *state, void *user_data) {
 	ql_tap_state.state = cur_dance(state);
 	switch (ql_tap_state.state) {
 		case TD_SINGLE_TAP:
-			qk_leader_start();
+			qk_leader_start(); //single tap of the Fn key is leader
 			break;
 		case TD_SINGLE_HOLD:
 			layer_on(1);
@@ -115,8 +117,6 @@ qk_tap_dance_action_t tap_dance_actions[] = {
 keymap_config_t keymap_config;
 
 
-// replaced KC_APP with KC_LEAD
-
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT(
         KC_ESC,  KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,             KC_PSCR, KC_SLCK, KC_PAUS, \
@@ -124,7 +124,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,   KC_DEL,  KC_END,  KC_PGDN, \
         TD(TD_CAPS), KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT, \
         KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,                              KC_UP, \
-        TD(TD_LCTL), KC_LGUI, KC_LALT,                   KC_SPC,                             KC_RALT, TD(TD_FN) /*TT(1)*/,   KC_LEAD,  KC_RCTL,            KC_LEFT, KC_DOWN, KC_RGHT \
+        TD(TD_LCTL), KC_LGUI, KC_LALT,                   KC_SPC,                             KC_RALT, TD(TD_FN),   KC_APP,  KC_RCTL,            KC_LEFT, KC_DOWN, KC_RGHT \
     ),
     [1] = LAYOUT(
         _______, KC_F13,  KC_F14,  KC_F15,  KC_F16,  KC_F17,  KC_F18,  KC_F19,  KC_F20,  KC_F21,  KC_F22,  KC_F23,  KC_F24,             KC_MUTE, KC_ASTG, _______, \
