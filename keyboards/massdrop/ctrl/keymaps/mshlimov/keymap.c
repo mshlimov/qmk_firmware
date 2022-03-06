@@ -111,7 +111,7 @@ void td_fn_reset(qk_tap_dance_state_t *state, void *user_data) {
 qk_tap_dance_action_t tap_dance_actions[] = {
     [TD_CAPS] = ACTION_TAP_DANCE_DOUBLE(KC_LCTL, KC_CAPS),
     [TD_LCTL] = ACTION_TAP_DANCE_DOUBLE(KC_LCTL, LCA(KC_T)),
-    [TD_FN] = ACTION_TAP_DANCE_FN_ADVANCED_TIME(NULL, td_fn_finished, td_fn_reset, 275)
+    [TD_FN] = ACTION_TAP_DANCE_FN_ADVANCED_TIME(NULL, td_fn_finished, td_fn_reset, 150) //150ms is the default doubletap timeout
 };
 	
 keymap_config_t keymap_config;
@@ -128,11 +128,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
     [1] = LAYOUT(
         _______, KC_F13,  KC_F14,  KC_F15,  KC_F16,  KC_F17,  KC_F18,  KC_F19,  KC_F20,  KC_F21,  KC_F22,  KC_F23,  KC_F24,             KC_MUTE, KC_ASTG, _______, \
-        _______, TG(3), TG(2), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPLY, KC_MSTP, KC_VOLU, \
+        _______, TG(1), TG(2), TG(3), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPLY, KC_MSTP, KC_VOLU, \
         _______, RGB_MOD, RGB_SPI, RGB_HUI, RGB_SAI, RGB_VAI, _______, U_T_AUTO,U_T_AGCR,_______, LD_PC, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
         _______, RGB_RMOD, RGB_SPD, RGB_HUD, RGB_SAD, RGB_VAD, _______, _______, _______, _______, _______, _______, _______, \
         _______, RGB_TOG, ROUT_TG, ROUT_FM, _______, MD_BOOT, NK_TOGG, LD_MAC, _______, _______, _______, _______,                              DBG_TOG, \
-        _______, _______, _______,                   _______,                            _______, _______, _______, _______,            DBG_MTRX, DBG_KBD, DBG_MOU \
+        _______, _______, _______,                   _______,                            _______, TD(TD_FN), _______, _______,            DBG_MTRX, DBG_KBD, DBG_MOU \
     ),
     [2] = LAYOUT(
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, _______, \
@@ -179,11 +179,11 @@ const uint8_t PROGMEM ledmap[][DRIVER_LED_TOTAL][3] = {
     },
     [1] = {
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,             BLUE, RED, _______, \
-        _______, RED, RED, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   BLUE, BLUE, BLUE, \
+        _______, RED, RED, RED, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   BLUE, BLUE, BLUE, \
         _______, TEAL, TEAL, TEAL, TEAL, TEAL, _______, CORAL,CORAL,_______, GREEN, _______, _______, _______,   BLUE, BLUE, BLUE, \
         _______, TEAL, TEAL, TEAL,  TEAL, TEAL,  _______, _______, _______, _______, _______, _______, _______, \
         _______, GREEN,GREEN, GREEN, _______, CORAL, CORAL, GREEN, _______, _______, _______, _______,                             PINK, \
-        _______, _______, _______, _______, _______, _______, _______, _______,            PINK, PINK, PINK \
+        _______, _______, _______, _______, _______, RED, _______, _______,            PINK, PINK, PINK \
     },
     [2] = {
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, _______, \
@@ -191,7 +191,7 @@ const uint8_t PROGMEM ledmap[][DRIVER_LED_TOTAL][3] = {
    GREEN, _______, GREEN,   _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______, \
         _______, GREEN, GREEN, GREEN, _______, _______, GREEN, GREEN, GREEN, GREEN, _______, _______, _______, \
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,                              _______, \
-        _______, _______, _______,                   _______,                            _______, _______, _______, _______,            _______, _______, _______ \
+        _______, _______, _______,                   _______,                            _______, RED, _______, _______,            _______, _______, _______ \
     },
     [3] = {
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, _______, \
@@ -210,7 +210,7 @@ const uint8_t PROGMEM ledmap[][DRIVER_LED_TOTAL][3] = {
 
 LEADER_EXTERNS();
 
-bool did_leader_succeed;
+bool did_leader_succeed; //150ms is the default doubletap timeout 
 uint16_t blink_timer;
 uint16_t blinking_timer;
 bool isLeaderLedOn;
@@ -294,18 +294,6 @@ void matrix_scan_user(void) {
 		did_leader_succeed = true;
 	}
 
-
-	SEQ_ONE_KEY(KC_L) {
-		if (!ld_mac) { //PC
-			SEND_STRING(SS_LGUI(SS_TAP(X_L)));
-		}
-		else { //MAC
-			SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
-		}
-		did_leader_succeed = true;
-	}
-
-
 	SEQ_ONE_KEY(KC_F) {
 		if (!ld_mac) { //PC
 			SEND_STRING(SS_TAP(X_LGUI) "firefox" SS_TAP(X_ENTER));
@@ -314,6 +302,14 @@ void matrix_scan_user(void) {
 			//TODO SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
 		}
 		did_leader_succeed = true;
+	}
+
+	SEQ_ONE_KEY(KC_LEAD) {
+		if(layer_state_is(1)){
+			layer_off(1);
+		} else {
+			layer_on(1);
+		}
 	}
 
 	SEQ_TWO_KEYS(KC_P, KC_M) {
