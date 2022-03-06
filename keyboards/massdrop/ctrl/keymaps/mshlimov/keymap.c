@@ -23,11 +23,6 @@ enum ctrl_keycodes {
 };
 
 
-enum {
-	TD_CAPS,
-	TD_LCTL,
-	TD_TAB,
-};
 
 enum combos {
 	LK_BSPC,
@@ -41,10 +36,80 @@ combo_t key_combos[COMBO_COUNT] = {
 };
 
 // Tap Dance definitions
+
+enum td_keycodes {
+	TD_CAPS,
+	TD_LCTL,
+	TD_FN,
+};
+
+typedef enum {
+	TD_NONE,
+	TD_UNKNOWN,
+	TD_SINGLE_TAP,
+	TD_SINGLE_HOLD,
+	TD_DOUBLE_TAP,
+} td_state_t;
+
+typedef struct {
+	bool is_press_action;
+	td_state_t state;
+} td_tap_t;
+
+// Function to determine the current tapdance state;
+td_state_t cur_dance(qk_tap_dance_state_t *state) {
+	if (state->count == 1) {
+		if (state->interrupted || !state->pressed) {
+			return TD_SINGLE_TAP;
+		} else if (state->pressed){
+			return TD_SINGLE_HOLD;
+		}
+	} else if (state->count == 2) {
+			return TD_DOUBLE_TAP;
+	}
+	return TD_UNKNOWN;
+}
+
+
+static td_tap_t ql_tap_state = {
+	.is_press_action = true,
+	.state = TD_NONE
+};
+
+void td_fn_finished(qk_tap_dance_state_t *state, void *user_data) {
+	ql_tap_state.state = cur_dance(state);
+	switch (ql_tap_state.state) {
+		case TD_SINGLE_TAP:
+			qk_leader_start();
+			break;
+		case TD_SINGLE_HOLD:
+			layer_on(1);
+			break;
+		case TD_DOUBLE_TAP:
+			//check to see if the layer is already set
+			if(layer_state_is(1)){
+				layer_off(1);
+			} else {
+				layer_on(1);
+			}
+			break;
+		default:
+			break;
+	}
+}
+
+void td_fn_reset(qk_tap_dance_state_t *state, void *user_data) {
+	if (ql_tap_state.state == TD_SINGLE_HOLD) {
+		layer_off(1);
+	}
+	ql_tap_state.state = TD_NONE;
+}
+
+
 qk_tap_dance_action_t tap_dance_actions[] = {
     [TD_CAPS] = ACTION_TAP_DANCE_DOUBLE(KC_LCTL, KC_CAPS),
     [TD_LCTL] = ACTION_TAP_DANCE_DOUBLE(KC_LCTL, LCA(KC_T)),
-    // [TD_TAB] = ACTION_TAP_DANCE_LAYER_TOGGLE(KC_TAB, 2)
+    [TD_FN] = ACTION_TAP_DANCE_FN_ADVANCED_TIME(NULL, td_fn_finished, td_fn_reset, 275)
 };
 	
 keymap_config_t keymap_config;
@@ -59,7 +124,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,   KC_DEL,  KC_END,  KC_PGDN, \
         TD(TD_CAPS), KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT, \
         KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,                              KC_UP, \
-        TD(TD_LCTL), KC_LGUI, KC_LALT,                   KC_SPC,                             KC_RALT, TT(1),   KC_LEAD,  KC_RCTL,            KC_LEFT, KC_DOWN, KC_RGHT \
+        TD(TD_LCTL), KC_LGUI, KC_LALT,                   KC_SPC,                             KC_RALT, TD(TD_FN) /*TT(1)*/,   KC_LEAD,  KC_RCTL,            KC_LEFT, KC_DOWN, KC_RGHT \
     ),
     [1] = LAYOUT(
         _______, KC_F13,  KC_F14,  KC_F15,  KC_F16,  KC_F17,  KC_F18,  KC_F19,  KC_F20,  KC_F21,  KC_F22,  KC_F23,  KC_F24,             KC_MUTE, KC_ASTG, _______, \
@@ -196,10 +261,10 @@ void matrix_scan_user(void) {
     }
 
   LEADER_DICTIONARY() {
-	  did_leader_succeed = leading = false;
+	did_leader_succeed = leading = false;
 
 		
-	  SEQ_ONE_KEY(KC_Q) {
+	SEQ_ONE_KEY(KC_Q) {
 		if (!ld_mac) { //PC
 			SEND_STRING(SS_LALT(SS_TAP(X_F4)));
 		}
@@ -209,7 +274,7 @@ void matrix_scan_user(void) {
 		did_leader_succeed = true;
 	  }
 
-	  SEQ_ONE_KEY(KC_W) {
+	SEQ_ONE_KEY(KC_W) {
 		if (!ld_mac) { //PC
 			SEND_STRING(SS_LCTRL(SS_TAP(X_F4)));
 		}
@@ -219,7 +284,7 @@ void matrix_scan_user(void) {
 		did_leader_succeed = true;
 	  }
 
-	  SEQ_ONE_KEY(KC_T) {
+	SEQ_ONE_KEY(KC_T) {
 		if (!ld_mac) { //PC
 			SEND_STRING(SS_LCTRL(SS_TAP(X_T)));
 		}
@@ -229,12 +294,40 @@ void matrix_scan_user(void) {
 		did_leader_succeed = true;
 	}
 
-	  SEQ_ONE_KEY(KC_L) {
+
+	SEQ_ONE_KEY(KC_L) {
 		if (!ld_mac) { //PC
 			SEND_STRING(SS_LGUI(SS_TAP(X_L)));
 		}
 		else { //MAC
 			SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
+		}
+		did_leader_succeed = true;
+	}
+
+
+	SEQ_ONE_KEY(KC_F) {
+		if (!ld_mac) { //PC
+			SEND_STRING(SS_TAP(X_LGUI) "firefox" SS_TAP(X_ENTER));
+		}
+		else { //MAC
+			//TODO SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
+		}
+		did_leader_succeed = true;
+	}
+
+	SEQ_TWO_KEYS(KC_P, KC_M) {
+		if (!ld_mac) { //PC
+			SEND_STRING(SS_TAP(X_LGUI) "YouTube Music" SS_TAP(X_ENT)); //Run youtube music from start menu
+		 	wait_ms(3000);	
+			SEND_STRING(SS_TAP(X_TAB)); // Select first playlist
+			wait_ms(300);
+			SEND_STRING(SS_TAP(X_SPC)); // Select first playlist
+			wait_ms(3000);
+			SEND_STRING(SS_LGUI(SS_TAP(X_DOWN))); //Shortcut to mimimize
+		}
+		else { //MAC
+			//TODO SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
 		}
 		did_leader_succeed = true;
 	}
