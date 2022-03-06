@@ -31,6 +31,8 @@ FAUXCLICKY_ENABLE = no      # Use buzzer to emulate clicky switches
 VIRTSER_ENABLE = no         # USB Serial Driver
 RAW_ENABLE = no             # Raw device
 AUTO_SHIFT_ENABLE = yes     # Auto Shift
+LEADER_ENABLE = yes	    # Enable Leader Key
+COMBO_ENABLE = yes
 
 # Custom RGB matrix handling
 RGB_MATRIX_ENABLE = yes

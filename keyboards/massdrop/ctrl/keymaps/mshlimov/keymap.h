@@ -28,6 +28,8 @@
 #define RGB_TIME_OUT_MIN 10
 #define RGB_TIME_OUT_STEP 10
 
+#define LD_MAC_DEFAULT false;
+
 
 extern rgb_config_t rgb_matrix_config;
 bool disable_layer_color;
@@ -40,4 +42,7 @@ uint16_t rgb_time_out_seconds;          // Idle LED timeout value, in seconds no
 uint16_t rgb_time_out_saved_seconds;    // The saved user config for RGB timeout period
 led_flags_t rgb_time_out_saved_flag;    // Store LED flag before timeout so it can be restored when LED is turned on again.
 
+bool ld_mac;
 
+bool leader_success_blink;
+bool leader_fail_blink;

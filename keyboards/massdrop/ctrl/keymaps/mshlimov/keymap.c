@@ -4,6 +4,7 @@
 static uint16_t idle_timer;             // Idle LED timeout timer
 static uint8_t idle_second_counter;     // Idle LED seconds counter, counts seconds not milliseconds
 static uint8_t key_event_counter;       // This counter is used to check if any keys are being held
+
 enum ctrl_keycodes {
     U_T_AUTO = SAFE_RANGE, //USB Extra Port Toggle Auto Detect / Always Active
     U_T_AGCR,              //USB Toggle Automatic GCR control
@@ -16,15 +17,28 @@ enum ctrl_keycodes {
     ROUT_VI,               // Timeout Value Increase. Increase idle time out before LED disabled
     ROUT_VD,               // Timeout Value Decrease. Decrease idle time out before LED disabled
     ROUT_FM,               // RGB timeout fast mode toggle
+    LD_MAC,
+    LD_PC,
+
 };
 
 
 enum {
 	TD_CAPS,
 	TD_LCTL,
-	TD_TAB	    
+	TD_TAB,
 };
 
+enum combos {
+	LK_BSPC,
+};
+
+
+const uint16_t PROGMEM lk_combo[] = {KC_L, KC_K, COMBO_END};
+
+combo_t key_combos[COMBO_COUNT] = {
+  [LK_BSPC] = COMBO(lk_combo, KC_BSPC)
+};
 
 // Tap Dance definitions
 qk_tap_dance_action_t tap_dance_actions[] = {
@@ -35,6 +49,9 @@ qk_tap_dance_action_t tap_dance_actions[] = {
 	
 keymap_config_t keymap_config;
 
+
+// replaced KC_APP with KC_LEAD
+
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT(
         KC_ESC,  KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,             KC_PSCR, KC_SLCK, KC_PAUS, \
@@ -42,14 +59,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,   KC_DEL,  KC_END,  KC_PGDN, \
         TD(TD_CAPS), KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT, \
         KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,                              KC_UP, \
-        TD(TD_LCTL), KC_LGUI, KC_LALT,                   KC_SPC,                             KC_RALT, TT(1),   KC_APP,  KC_RCTL,            KC_LEFT, KC_DOWN, KC_RGHT \
+        TD(TD_LCTL), KC_LGUI, KC_LALT,                   KC_SPC,                             KC_RALT, TT(1),   KC_LEAD,  KC_RCTL,            KC_LEFT, KC_DOWN, KC_RGHT \
     ),
     [1] = LAYOUT(
         _______, KC_F13,  KC_F14,  KC_F15,  KC_F16,  KC_F17,  KC_F18,  KC_F19,  KC_F20,  KC_F21,  KC_F22,  KC_F23,  KC_F24,             KC_MUTE, KC_ASTG, _______, \
         _______, TG(3), TG(2), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPLY, KC_MSTP, KC_VOLU, \
-        _______, RGB_MOD, RGB_SPI, RGB_HUI, RGB_SAI, RGB_VAI, _______, U_T_AUTO,U_T_AGCR,_______, _______, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
+        _______, RGB_MOD, RGB_SPI, RGB_HUI, RGB_SAI, RGB_VAI, _______, U_T_AUTO,U_T_AGCR,_______, LD_PC, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
         _______, RGB_RMOD, RGB_SPD, RGB_HUD, RGB_SAD, RGB_VAD, _______, _______, _______, _______, _______, _______, _______, \
-        _______, RGB_TOG, ROUT_TG, ROUT_FM, _______, MD_BOOT, NK_TOGG, _______, _______, _______, _______, _______,                              DBG_TOG, \
+        _______, RGB_TOG, ROUT_TG, ROUT_FM, _______, MD_BOOT, NK_TOGG, LD_MAC, _______, _______, _______, _______,                              DBG_TOG, \
         _______, _______, _______,                   _______,                            _______, _______, _______, _______,            DBG_MTRX, DBG_KBD, DBG_MOU \
     ),
     [2] = LAYOUT(
@@ -98,9 +115,9 @@ const uint8_t PROGMEM ledmap[][DRIVER_LED_TOTAL][3] = {
     [1] = {
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,             BLUE, RED, _______, \
         _______, RED, RED, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   BLUE, BLUE, BLUE, \
-        _______, TEAL, TEAL, TEAL, TEAL, TEAL, _______, CORAL,CORAL,_______, _______, _______, _______, _______,   BLUE, BLUE, BLUE, \
+        _______, TEAL, TEAL, TEAL, TEAL, TEAL, _______, CORAL,CORAL,_______, GREEN, _______, _______, _______,   BLUE, BLUE, BLUE, \
         _______, TEAL, TEAL, TEAL,  TEAL, TEAL,  _______, _______, _______, _______, _______, _______, _______, \
-        _______, GREEN,GREEN, GREEN, _______, CORAL, CORAL, _______, _______, _______, _______, _______,                             PINK, \
+        _______, GREEN,GREEN, GREEN, _______, CORAL, CORAL, GREEN, _______, _______, _______, _______,                             PINK, \
         _______, _______, _______, _______, _______, _______, _______, _______,            PINK, PINK, PINK \
     },
     [2] = {
@@ -126,7 +143,12 @@ const uint8_t PROGMEM ledmap[][DRIVER_LED_TOTAL][3] = {
 #define _______ KC_TRNS
 #endif
 
+LEADER_EXTERNS();
 
+bool did_leader_succeed;
+uint16_t blink_timer;
+uint16_t blinking_timer;
+bool isLeaderLedOn;
 
 // Runs just one time when the keyboard initializes.
 void matrix_init_user(void) {
@@ -138,7 +160,12 @@ void matrix_init_user(void) {
     rgb_enabled_flag = true;                            // Initially, keyboard RGB is enabled. Change to false config.h initializes RGB disabled.
     rgb_time_out_fast_mode_enabled = false;             // RGB timeout fast mode disabled initially.
     rgb_time_out_saved_flag = rgb_matrix_get_flags();   // Save RGB matrix state for when keyboard comes back from ide.
-
+    ld_mac = LD_MAC_DEFAULT;                            // Leader k ey default OS initialized to its default configure in keymap.h
+    leader_success_blink = false;
+    leader_fail_blink = false;
+    blink_timer = 0;
+    blinking_timer = 0;
+    isLeaderLedOn = false;
 };
 
 void keyboard_post_init_user(void) {
@@ -167,8 +194,67 @@ void matrix_scan_user(void) {
             idle_second_counter = 0;
         }
     }
+
+  LEADER_DICTIONARY() {
+	  did_leader_succeed = leading = false;
+
+		
+	  SEQ_ONE_KEY(KC_Q) {
+		if (!ld_mac) { //PC
+			SEND_STRING(SS_LALT(SS_TAP(X_F4)));
+		}
+		else { //MAC
+			SEND_STRING(SS_LGUI(SS_TAP(X_Q)));
+		}
+		did_leader_succeed = true;
+	  }
+
+	  SEQ_ONE_KEY(KC_W) {
+		if (!ld_mac) { //PC
+			SEND_STRING(SS_LCTRL(SS_TAP(X_F4)));
+		}
+		else { //MAC
+			SEND_STRING(SS_LGUI(SS_TAP(X_W)));
+		}
+		did_leader_succeed = true;
+	  }
+
+	  SEQ_ONE_KEY(KC_T) {
+		if (!ld_mac) { //PC
+			SEND_STRING(SS_LCTRL(SS_TAP(X_T)));
+		}
+		else { //MAC
+			SEND_STRING(SS_LGUI(SS_TAP(X_T)));
+		}
+		did_leader_succeed = true;
+	}
+
+	  SEQ_ONE_KEY(KC_L) {
+		if (!ld_mac) { //PC
+			SEND_STRING(SS_LGUI(SS_TAP(X_L)));
+		}
+		else { //MAC
+			SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
+		}
+		did_leader_succeed = true;
+	}
+
+	leader_end();
+  }
 };
 
+
+void leader_end(void) {
+	if(did_leader_succeed) {
+		leader_success_blink = true;
+		blinking_timer = timer_read();
+		isLeaderLedOn = true;
+	} else {
+		leader_fail_blink = true;
+		blinking_timer = timer_read();
+		isLeaderLedOn = true;
+	}
+}
 
 #define MODS_SHIFT  (get_mods() & MOD_MASK_SHIFT)
 #define MODS_CTRL   (get_mods() & MOD_MASK_CTRL)
@@ -302,6 +388,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 TOGGLE_FLAG_AND_PRINT(rgb_time_out_fast_mode_enabled, "RGB Timeout Fast Mode");
 	    }
             return false;
+	case LD_MAC:
+	    if(record->event.pressed){
+		ld_mac = true;
+	    }
+	    return false;
+	case LD_PC:
+	    if(record->event.pressed){
+		ld_mac = false;
+	    }
+	    return false;
         default:
             return true; //Process all other keycodes normally
     }
@@ -333,4 +429,22 @@ void rgb_matrix_indicators_user(void) {
             return;
         }
     set_layer_color(get_highest_layer(layer_state));
+
+    if (leader_success_blink || leader_fail_blink) {
+	if(timer_elapsed(blink_timer) > 400) {
+	  isLeaderLedOn = !isLeaderLedOn;
+	  blink_timer = timer_read();
+	}
+	if(timer_elapsed(blinking_timer) > 1600){
+		leader_success_blink = false;
+		leader_fail_blink = false;
+		isLeaderLedOn = false;
+	}
+	if (isLeaderLedOn) {
+	  for (int i=0; i < DRIVER_LED_TOTAL; i++) {
+		  if (leader_success_blink) rgb_matrix_set_color(i, 0x00, 0xFF, 0x00); 
+		  if (leader_fail_blink) rgb_matrix_set_color(i, 0xFF, 0xFF, 0xFF); 
+	  }
+	}
+    }
 }
