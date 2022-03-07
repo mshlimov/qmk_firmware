@@ -264,6 +264,7 @@ void matrix_scan_user(void) {
 	did_leader_succeed = leading = false;
 
 		
+
 	SEQ_ONE_KEY(KC_Q) {
 		if (!ld_mac) { //PC
 			SEND_STRING(SS_LALT(SS_TAP(X_F4)));
@@ -272,7 +273,7 @@ void matrix_scan_user(void) {
 			SEND_STRING(SS_LGUI(SS_TAP(X_Q)));
 		}
 		did_leader_succeed = true;
-	  }
+	}
 
 	SEQ_ONE_KEY(KC_W) {
 		if (!ld_mac) { //PC
@@ -282,7 +283,7 @@ void matrix_scan_user(void) {
 			SEND_STRING(SS_LGUI(SS_TAP(X_W)));
 		}
 		did_leader_succeed = true;
-	  }
+	}
 
 	SEQ_ONE_KEY(KC_T) {
 		if (!ld_mac) { //PC
@@ -293,6 +294,7 @@ void matrix_scan_user(void) {
 		}
 		did_leader_succeed = true;
 	}
+
 
 	SEQ_ONE_KEY(KC_F) {
 		if (!ld_mac) { //PC
@@ -310,6 +312,17 @@ void matrix_scan_user(void) {
 		} else {
 			layer_on(1);
 		}
+	}
+
+   
+	SEQ_ONE_KEY(KC_L) {
+		if (!ld_mac) { //PC
+			SEND_STRING(SS_LGUI(SS_TAP(X_L)));
+		}
+		else { //MAC
+			SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
+		}
+		did_leader_succeed = true;
 	}
 
 	SEQ_TWO_KEYS(KC_P, KC_M) {
