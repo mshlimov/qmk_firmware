@@ -33,6 +33,7 @@ RAW_ENABLE = no             # Raw device
 AUTO_SHIFT_ENABLE = yes     # Auto Shift
 LEADER_ENABLE = yes	    # Enable Leader Key
 COMBO_ENABLE = yes
+VELOCIKEY_ENABLE = yes
 
 # Custom RGB matrix handling
 RGB_MATRIX_ENABLE = yes
