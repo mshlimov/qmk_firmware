@@ -1,17 +1,13 @@
-#include "quantum.h"
 #include "matrix.h"
 #include "debounce.h"
 #include "wait.h"
 #include "print.h"
 #include "debug.h"
+
 #ifdef SPLIT_KEYBOARD
 #    include "split_common/split_util.h"
 #    include "split_common/transactions.h"
 #    include <string.h>
-
-#    define ROWS_PER_HAND (MATRIX_ROWS / 2)
-#else
-#    define ROWS_PER_HAND (MATRIX_ROWS)
 #endif
 
 #ifndef MATRIX_IO_DELAY
@@ -72,15 +68,12 @@ inline matrix_row_t matrix_get_row(uint8_t row) {
 #if (MATRIX_COLS <= 8)
 #    define print_matrix_header() print("\nr/c 01234567\n")
 #    define print_matrix_row(row) print_bin_reverse8(matrix_get_row(row))
-#    define matrix_bitpop(row) bitpop(matrix_get_row(row))
 #elif (MATRIX_COLS <= 16)
 #    define print_matrix_header() print("\nr/c 0123456789ABCDEF\n")
 #    define print_matrix_row(row) print_bin_reverse16(matrix_get_row(row))
-#    define matrix_bitpop(row) bitpop16(matrix_get_row(row))
 #elif (MATRIX_COLS <= 32)
 #    define print_matrix_header() print("\nr/c 0123456789ABCDEF0123456789ABCDEF\n")
 #    define print_matrix_row(row) print_bin_reverse32(matrix_get_row(row))
-#    define matrix_bitpop(row) bitpop32(matrix_get_row(row))
 #endif
 
 void matrix_print(void) {
@@ -94,20 +87,12 @@ void matrix_print(void) {
     }
 }
 
-uint8_t matrix_key_count(void) {
-    uint8_t count = 0;
-    for (uint8_t i = 0; i < MATRIX_ROWS; i++) {
-        count += matrix_bitpop(i);
-    }
-    return count;
-}
-
 #ifdef SPLIT_KEYBOARD
 bool matrix_post_scan(void) {
     bool changed = false;
     if (is_keyboard_master()) {
-        static bool  last_connected              = false;
-        matrix_row_t slave_matrix[ROWS_PER_HAND] = {0};
+        static bool  last_connected                     = false;
+        matrix_row_t slave_matrix[MATRIX_ROWS_PER_HAND] = {0};
         if (transport_master_if_connected(matrix + thisHand, slave_matrix)) {
             changed = memcmp(matrix + thatHand, slave_matrix, sizeof(slave_matrix)) != 0;
 
@@ -122,7 +107,7 @@ bool matrix_post_scan(void) {
 
         if (changed) memcpy(matrix + thatHand, slave_matrix, sizeof(slave_matrix));
 
-        matrix_scan_quantum();
+        matrix_scan_kb();
     } else {
         transport_slave(matrix + thatHand, matrix + thisHand);
 
@@ -133,7 +118,7 @@ bool matrix_post_scan(void) {
 }
 #endif
 
-/*　`matrix_io_delay ()` exists for backwards compatibility. From now on, use matrix_output_unselect_delay().　*/
+/* `matrix_io_delay ()` exists for backwards compatibility. From now on, use matrix_output_unselect_delay(). */
 __attribute__((weak)) void matrix_io_delay(void) {
     wait_us(MATRIX_IO_DELAY);
 }
@@ -159,8 +144,8 @@ __attribute__((weak)) void matrix_slave_scan_user(void) {}
 
 __attribute__((weak)) void matrix_init(void) {
 #ifdef SPLIT_KEYBOARD
-    thisHand = isLeftHand ? 0 : (ROWS_PER_HAND);
-    thatHand = ROWS_PER_HAND - thisHand;
+    thisHand = is_keyboard_left() ? 0 : (MATRIX_ROWS_PER_HAND);
+    thatHand = MATRIX_ROWS_PER_HAND - thisHand;
 #endif
 
     matrix_init_custom();
@@ -171,20 +156,19 @@ __attribute__((weak)) void matrix_init(void) {
         matrix[i]     = 0;
     }
 
-    debounce_init(ROWS_PER_HAND);
+    debounce_init();
 
-    matrix_init_quantum();
+    matrix_init_kb();
 }
 
 __attribute__((weak)) uint8_t matrix_scan(void) {
     bool changed = matrix_scan_custom(raw_matrix);
 
 #ifdef SPLIT_KEYBOARD
-    debounce(raw_matrix, matrix + thisHand, ROWS_PER_HAND, changed);
-    changed = (changed || matrix_post_scan());
+    changed = debounce(raw_matrix, matrix + thisHand, changed) | matrix_post_scan();
 #else
-    debounce(raw_matrix, matrix, ROWS_PER_HAND, changed);
-    matrix_scan_quantum();
+    changed = debounce(raw_matrix, matrix, changed);
+    matrix_scan_kb();
 #endif
 
     return changed;
