@@ -29,6 +29,13 @@
 #define RGB_TIME_OUT_STEP 10
 
 #define LD_MAC_DEFAULT false;
+#define TAPPING_TERM_PER_KEY true;
+
+#define TOGGLE_FLAG_AND_PRINT(flag, name)      \
+    do {                                       \
+        flag = !(flag);                        \
+        dprintf(name " = %d\r\n", (flag));     \
+    } while (0)
 
 
 extern rgb_config_t rgb_matrix_config;

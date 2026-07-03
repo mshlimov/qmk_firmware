@@ -1,5 +1,7 @@
+#include QMK_KEYBOARD_H
 #include "keymap.h" 
 #include "matrix.h"
+
 
 // Static variables used to track keyboard idle time and shut-off LEDs
 static uint16_t idle_timer;             // Idle LED timeout timer
@@ -7,9 +9,7 @@ static uint8_t idle_second_counter;     // Idle LED seconds counter, counts seco
 static uint8_t key_event_counter;       // This counter is used to check if any keys are being held
 
 enum ctrl_keycodes {
-    U_T_AUTO = SAFE_RANGE, // USB Extra Port Toggle Auto Detect / Always Active
-    U_T_AGCR,              // USB Toggle Automatic GCR control
-    DBG_TOG,               // DEBUG Toggle On / Off
+    DBG_TOG = SAFE_RANGE,  // DEBUG Toggle On / Off
     DBG_MTRX,              // DEBUG Toggle Matrix Prints
     DBG_KBD,               // DEBUG Toggle Keyboard Prints
     DBG_MOU,               // DEBUG Toggle Mouse Prints
@@ -18,9 +18,8 @@ enum ctrl_keycodes {
     ROUT_VI,               // Timeout Value Increase. Increase idle time out before LED disabled
     ROUT_VD,               // Timeout Value Decrease. Decrease idle time out before LED disabled
     ROUT_FM,               // RGB timeout fast mode toggle
-    LD_MAC,                // Put leader key sequences in MAC mode
-    LD_PC,                 // Put leader key sequences in PC mode
-
+    LD_MAC,                // Set leader key OS mode to Mac
+    LD_PC,                 // Set leader key OS mode to PC
 };
 
 
@@ -59,7 +58,7 @@ typedef struct {
 } td_tap_t;
 
 // Function to determine the current tapdance state;
-td_state_t cur_dance(qk_tap_dance_state_t *state) {
+td_state_t cur_dance(tap_dance_state_t *state) {
 	if (state->count == 1) {
 		if (state->interrupted || !state->pressed) {
 			return TD_SINGLE_TAP;
@@ -78,11 +77,11 @@ static td_tap_t ql_tap_state = {
 	.state = TD_NONE
 };
 
-void td_fn_finished(qk_tap_dance_state_t *state, void *user_data) {
+void td_fn_finished(tap_dance_state_t *state, void *user_data) {
 	ql_tap_state.state = cur_dance(state);
 	switch (ql_tap_state.state) {
 		case TD_SINGLE_TAP:
-			qk_leader_start(); //single tap of the Fn key is leader
+			leader_start(); //single tap of the Fn key is leader
 			break;
 		case TD_SINGLE_HOLD:
 			layer_on(1);
@@ -100,64 +99,79 @@ void td_fn_finished(qk_tap_dance_state_t *state, void *user_data) {
 	}
 }
 
-void td_fn_reset(qk_tap_dance_state_t *state, void *user_data) {
+void td_fn_reset(tap_dance_state_t *state, void *user_data) {
 	if (ql_tap_state.state == TD_SINGLE_HOLD) {
 		layer_off(1);
 	}
 	ql_tap_state.state = TD_NONE;
 }
 
+uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        // Assign a shorter time (150ms) for a fast tap dance key
+        case TD(TD_FN):
+            return 150;
+            
+        // Return your default TAPPING_TERM for all other keys
+        default:
+            return TAPPING_TERM;
+    }
+}
 
-qk_tap_dance_action_t tap_dance_actions[] = {
+tap_dance_action_t tap_dance_actions[] = {
     [TD_CAPS] = ACTION_TAP_DANCE_DOUBLE(KC_LCTL, KC_CAPS),
     [TD_LCTL] = ACTION_TAP_DANCE_DOUBLE(KC_LCTL, LCA(KC_T)),
-    [TD_FN] = ACTION_TAP_DANCE_FN_ADVANCED_TIME(NULL, td_fn_finished, td_fn_reset, 150) //150ms is the default doubletap timeout
+    [TD_FN] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, td_fn_finished, td_fn_reset) //150ms is the default doubletap timeout
 };
 	
 keymap_config_t keymap_config;
 
+#undef _______
+#define _______ KC_TRNS
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-    [0] = LAYOUT(
-        KC_ESC,  KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,             KC_PSCR, KC_SLCK,KC_PAUS, \
-        KC_GRV,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC,   KC_INS,  KC_HOME, KC_PGUP, \
-        KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,   KC_DEL,  KC_END,  KC_PGDN, \
-        TD(TD_CAPS), KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT, \
-        KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,                              KC_UP, \
-        TD(TD_LCTL), KC_LGUI, KC_LALT,                   KC_SPC,                             KC_RALT, TD(TD_FN),   KC_APP,  KC_RCTL,            KC_LEFT, KC_DOWN, KC_RGHT \
+    [0] = LAYOUT_tkl_ansi(
+        KC_ESC,  KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,             KC_PSCR, KC_SCRL,KC_PAUS,
+        KC_GRV,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC,   KC_INS,  KC_HOME, KC_PGUP,
+        KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,   KC_DEL,  KC_END,  KC_PGDN,
+        TD(TD_CAPS), KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT,
+        KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,                              KC_UP,
+        TD(TD_LCTL), KC_LGUI, KC_LALT,                   KC_SPC,                         KC_RALT, TD(TD_FN),   KC_APP,  KC_RCTL,    KC_LEFT, KC_DOWN, KC_RGHT
     ),
-    [1] = LAYOUT(
-        _______, KC_F13,  KC_F14,  KC_F15,  KC_F16,  KC_F17,  KC_F18,  KC_F19,  KC_F20,  KC_F21,  KC_F22,  KC_F23,  KC_F24,             KC_MUTE, KC_ASTG, _______, \
+
+    [1] = LAYOUT_tkl_ansi(
+        _______, KC_F13,  KC_F14,  KC_F15,  KC_F16,  KC_F17,  KC_F18,  KC_F19,  KC_F20,  KC_F21,  KC_F22,  KC_F23,  KC_F24,             KC_MUTE, AS_TOGG, _______, \
         _______, TG(1), TG(2), TG(3), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPLY, KC_MSTP, KC_VOLU, \
-        _______, RGB_MOD, RGB_SPI, RGB_HUI, RGB_SAI, RGB_VAI, _______, U_T_AUTO,U_T_AGCR,_______, LD_PC, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
-        _______, RGB_RMOD, RGB_SPD, RGB_HUD, RGB_SAD, RGB_VAD, _______, _______, _______, _______, _______, _______, _______, \
-        _______, RGB_TOG, ROUT_TG, ROUT_FM, _______, MD_BOOT, NK_TOGG, LD_MAC, _______, _______, _______, _______,                              DBG_TOG, \
+        _______, RM_NEXT, RM_SPDU, RM_HUEU, RM_SATU, RM_VALU, _______, _______,_______,_______, LD_PC, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
+        _______, RM_PREV, RM_SPDD, RM_HUED, RM_SATD, RM_VALD, _______, _______, _______, _______, _______, _______, _______, \
+        _______, RM_TOGG, ROUT_TG, ROUT_FM, _______, MD_BOOT, NK_TOGG, LD_MAC, _______, _______, _______, _______,                              DBG_TOG, \
         _______, _______, _______,                   _______,                            _______, TD(TD_FN), _______, _______,            DBG_MTRX, DBG_KBD, DBG_MOU \
     ),
-    [2] = LAYOUT(
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______, \
-        _______, _______, KC_UP,   _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______, \
-        _______, KC_LEFT, KC_DOWN, KC_RIGHT, _______, _______, KC_LEFT, KC_DOWN, KC_UP, KC_RIGHT, _______, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,                              _______, \
-        _______, _______, _______,                   _______,                            _______, TG(2), _______, _______,            _______, _______, _______ \
+
+    [2] = LAYOUT_tkl_ansi(
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______,
+        _______, _______, KC_UP,   _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______,
+        _______, KC_LEFT, KC_DOWN, KC_RIGHT, _______, _______, KC_LEFT, KC_DOWN, KC_UP, KC_RIGHT, _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,                              _______,
+        _______, _______, _______,                   _______,                            _______, TG(2), _______, _______,            _______, _______, _______
     ),
-    [3] = LAYOUT(
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, KC_P7,   KC_P8,   KC_P9,   KC_PMNS, KC_PSLS, KC_PAST, _______,   _______, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, KC_P4,   KC_P5,   KC_P6,   KC_PPLS, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, KC_P1,   KC_P2,   KC_P3,    _______, _______,                              _______, \
-        _______, _______, _______,                   KC_0,                               KC_DOT,  TG(3), _______, _______,            _______, _______, _______ \
-    ),
+    [3] = LAYOUT_tkl_ansi(
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, KC_P7,   KC_P8,   KC_P9,   KC_PMNS, KC_PSLS, KC_PAST, _______,   _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, KC_P4,   KC_P5,   KC_P6,   KC_PPLS, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, KC_P1,   KC_P2,   KC_P3,    _______, _______,                              _______,
+        _______, _______, _______,                   KC_0,                               KC_DOT,  TG(3), _______, _______,            _______, _______, _______
+    )
     /*
-    [X] = LAYOUT(
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, \
-        _______, _______, _______, _______, _______, _______, NK_TOGG, _______, _______, _______, _______, _______,                              _______, \
-        _______, _______, _______,                   _______,                            _______, _______, _______, _______,            _______, _______, _______ \
+    [X] = LAYOUT_tkl_ansi(
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, NK_TOGG, _______, _______, _______, _______, _______,                              _______,
+        _______, _______, _______,                   _______,                            _______, _______, _______, _______,            _______, _______, _______
     ),
     */
 };
@@ -168,7 +182,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 #undef _______
 #define _______ {0, 0, 0}
 
-const uint8_t PROGMEM ledmap[][DRIVER_LED_TOTAL][3] = {
+const uint8_t PROGMEM ledmap[][RGB_MATRIX_LED_COUNT][3] = {
     [0] = {
         _______, CORAL,   CORAL,   _______, _______, CORAL,   CORAL,   _______, _______, CORAL,   _______, YELLOW,  YELLOW,           TEAL,    GOLD,   GOLD,
         _______, _______, PINK,    PINK,    PINK,    PINK,    _______, _______, _______, GREEN,   GREEN,   GREEN,   GREEN,   _______, TEAL,    TEAL,   TEAL,
@@ -208,9 +222,7 @@ const uint8_t PROGMEM ledmap[][DRIVER_LED_TOTAL][3] = {
 #define _______ KC_TRNS
 #endif
 
-LEADER_EXTERNS();
-
-bool did_leader_succeed; //150ms is the default doubletap timeout 
+bool did_leader_succeed; //150ms is the default doubletap timeout
 uint16_t blink_timer;
 uint16_t blinking_timer;
 bool isLeaderLedOn;
@@ -260,103 +272,113 @@ void matrix_scan_user(void) {
         }
     }
 
-  LEADER_DICTIONARY() {
-	did_leader_succeed = leading = false;
+    // LEADER_DICTIONARY() {
+    //     did_leader_succeed = leading = false;
 
-		
+    //     SEQ_ONE_KEY(KC_Q) {
+    //         if (!ld_mac) { // PC
+    //             SEND_STRING(SS_LALT(SS_TAP(X_F4)));
+    //         } else { // MAC
+    //             SEND_STRING(SS_LGUI(SS_TAP(X_Q)));
+    //         }
+    //         did_leader_succeed = true;
+    //     }
 
-	SEQ_ONE_KEY(KC_Q) {
-		if (!ld_mac) { //PC
-			SEND_STRING(SS_LALT(SS_TAP(X_F4)));
-		}
-		else { //MAC
-			SEND_STRING(SS_LGUI(SS_TAP(X_Q)));
-		}
-		did_leader_succeed = true;
-	}
+    //     SEQ_ONE_KEY(KC_W) {
+    //         if (!ld_mac) { // PC
+    //             SEND_STRING(SS_LCTRL(SS_TAP(X_F4)));
+    //         } else { // MAC
+    //             SEND_STRING(SS_LGUI(SS_TAP(X_W)));
+    //         }
+    //         did_leader_succeed = true;
+    //     }
 
-	SEQ_ONE_KEY(KC_W) {
-		if (!ld_mac) { //PC
-			SEND_STRING(SS_LCTRL(SS_TAP(X_F4)));
-		}
-		else { //MAC
-			SEND_STRING(SS_LGUI(SS_TAP(X_W)));
-		}
-		did_leader_succeed = true;
-	}
+    //     SEQ_ONE_KEY(KC_T) {
+    //         if (!ld_mac) { // PC
+    //             SEND_STRING(SS_LCTRL(SS_TAP(X_T)));
+    //         } else { // MAC
+    //             SEND_STRING(SS_LGUI(SS_TAP(X_T)));
+    //         }
+    //         did_leader_succeed = true;
+    //     }
 
-	SEQ_ONE_KEY(KC_T) {
-		if (!ld_mac) { //PC
-			SEND_STRING(SS_LCTRL(SS_TAP(X_T)));
-		}
-		else { //MAC
-			SEND_STRING(SS_LGUI(SS_TAP(X_T)));
-		}
-		did_leader_succeed = true;
-	}
+    //     SEQ_ONE_KEY(KC_F) {
+    //         if (!ld_mac) { // PC
+    //             SEND_STRING(SS_TAP(X_LGUI) "firefox" SS_TAP(X_ENTER));
+    //         } else { // MAC
+    //             // TODO SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
+    //         }
+    //         did_leader_succeed = true;
+    //     }
 
+    //     SEQ_ONE_KEY(KC_LEAD) {
+    //         if (layer_state_is(1)) {
+    //             layer_off(1);
+    //         } else {
+    //             layer_on(1);
+    //         }
+    //     }
 
-	SEQ_ONE_KEY(KC_F) {
-		if (!ld_mac) { //PC
-			SEND_STRING(SS_TAP(X_LGUI) "firefox" SS_TAP(X_ENTER));
-		}
-		else { //MAC
-			//TODO SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
-		}
-		did_leader_succeed = true;
-	}
+    //     SEQ_ONE_KEY(KC_L) {
+    //         if (!ld_mac) { // PC
+    //             SEND_STRING(SS_LGUI(SS_TAP(X_L)));
+    //         } else { // MAC
+    //             SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
+    //         }
+    //         did_leader_succeed = true;
+    //     }
 
-	SEQ_ONE_KEY(KC_LEAD) {
-		if(layer_state_is(1)){
-			layer_off(1);
-		} else {
-			layer_on(1);
-		}
-	}
+    //     SEQ_TWO_KEYS(KC_P, KC_M) {
+    //         if (!ld_mac) {                                                 // PC
+    //             SEND_STRING(SS_TAP(X_LGUI) "YouTube Music" SS_TAP(X_ENT)); // Run youtube music from start menu
+    //             wait_ms(3000);
+    //             SEND_STRING(SS_TAP(X_TAB)); // Select first playlist
+    //             wait_ms(300);
+    //             SEND_STRING(SS_TAP(X_SPC)); // Select first playlist
+    //             wait_ms(3000);
+    //             SEND_STRING(SS_LGUI(SS_TAP(X_DOWN))); // Shortcut to mimimize
+    //         } else {                                  // MAC
+    //             // TODO SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
+    //         }
+    //         did_leader_succeed = true;
+    //     }
 
-   
-	SEQ_ONE_KEY(KC_L) {
-		if (!ld_mac) { //PC
-			SEND_STRING(SS_LGUI(SS_TAP(X_L)));
-		}
-		else { //MAC
-			SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
-		}
-		did_leader_succeed = true;
-	}
-
-	SEQ_TWO_KEYS(KC_P, KC_M) {
-		if (!ld_mac) { //PC
-			SEND_STRING(SS_TAP(X_LGUI) "YouTube Music" SS_TAP(X_ENT)); //Run youtube music from start menu
-		 	wait_ms(3000);	
-			SEND_STRING(SS_TAP(X_TAB)); // Select first playlist
-			wait_ms(300);
-			SEND_STRING(SS_TAP(X_SPC)); // Select first playlist
-			wait_ms(3000);
-			SEND_STRING(SS_LGUI(SS_TAP(X_DOWN))); //Shortcut to mimimize
-		}
-		else { //MAC
-			//TODO SEND_STRING(SS_LCTRL(SS_LGUI(SS_TAP(X_Q))));
-		}
-		did_leader_succeed = true;
-	}
-
-	leader_end();
-  }
+    //     leader_end();
+    // }
 };
 
 
-void leader_end(void) {
-	if(did_leader_succeed) {
-		leader_success_blink = true;
-		blinking_timer = timer_read();
-		isLeaderLedOn = true;
-	} else {
-		leader_fail_blink = true;
-		blinking_timer = timer_read();
-		isLeaderLedOn = true;
-	}
-}
+// void leader_end(void) {
+// 	if(did_leader_succeed) {
+// 		leader_success_blink = true;
+// 		blinking_timer = timer_read();
+// 		isLeaderLedOn = true;
+// 	} else {
+// 		leader_fail_blink = true;
+// 		blinking_timer = timer_read();
+// 		isLeaderLedOn = true;
+// 	}
+// }
+
+
+// void leader_end_user(void) {
+//     if (leader_sequence_started) {
+//         // For a single-key sequence (e.g., Lead -> A)
+//         SEQ_ONE_KEY(KC_A, {
+//             SEND_STRING("Hello World");
+//         });
+
+//         // For a two-key sequence (e.g., Lead -> D -> D)
+//         SEQ_TWO_KEYS(KC_D, KC_D, {
+//             tap_code16(LALT(KC_F4));
+//         });
+
+//         // For a three-key sequence (e.g., Lead -> J -> K -> L)
+//         SEQ_THREE_KEYS(KC_J, KC_K, KC_L, {
+//             // Your custom macro actions here
+//         });
+//     }
+// }
 
 #define MODS_SHIFT  (get_mods() & MOD_MASK_SHIFT)
 #define MODS_CTRL   (get_mods() & MOD_MASK_CTRL)
@@ -383,19 +405,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         }
     }
 
-
-
     switch (keycode) {
-        case U_T_AUTO:
-            if (record->event.pressed && MODS_SHIFT && MODS_CTRL) {
-                TOGGLE_FLAG_AND_PRINT(usb_extra_manual, "USB extra port manual mode");
-            }
-            return false;
-        case U_T_AGCR:
-            if (record->event.pressed && MODS_SHIFT && MODS_CTRL) {
-                TOGGLE_FLAG_AND_PRINT(usb_gcr_auto, "USB GCR auto mode");
-            }
-            return false;
         case DBG_TOG:
             if (record->event.pressed) {
                 TOGGLE_FLAG_AND_PRINT(debug_enable, "Debug mode");
@@ -425,7 +435,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 }
             }
             return false;
-        case RGB_TOG:
+        case RM_TOGG:
 	    rgb_time_out_enable = rgb_time_out_user_value;
             if (record->event.pressed) {
               switch (rgb_matrix_get_flags()) {
@@ -507,7 +517,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 void set_layer_color(int layer) {
     if (layer == 0) { return; }
-    for (int i = 0; i < DRIVER_LED_TOTAL; i++) {
+    for (int i = 0; i < RGB_MATRIX_LED_COUNT; i++) {
         HSV hsv = {
             .h = pgm_read_byte(&ledmap[layer][i][0]),
             .s = pgm_read_byte(&ledmap[layer][i][1]),
@@ -524,29 +534,29 @@ void set_layer_color(int layer) {
     }
 }
 
-void rgb_matrix_indicators_user(void) {
+bool rgb_matrix_indicators_user(void) {
     if (rgb_matrix_get_suspend_state() || disable_layer_color ||
         rgb_matrix_get_flags() == LED_FLAG_NONE ||
         rgb_matrix_get_flags() == LED_FLAG_UNDERGLOW) {
-            return;
+            return false;
         }
     set_layer_color(get_highest_layer(layer_state));
 
     if (leader_success_blink || leader_fail_blink) {
-    	if(timer_elapsed(blink_timer) > 30) {
-	  isLeaderLedOn = !isLeaderLedOn;
-	  blink_timer = timer_read();
-	}	
-	if (isLeaderLedOn) {
-	  for (int i=0; i < DRIVER_LED_TOTAL; i++) {
-		  if (leader_success_blink) rgb_matrix_set_color(i, 0x00, 0xFF, 0x00); 
-		  if (leader_fail_blink) rgb_matrix_set_color(i, 0xFF, 0xFF, 0xFF); 
-	  }
-	} else {
-	  for (int i=0; i < DRIVER_LED_TOTAL; i++) {
-		rgb_matrix_set_color(i, 0x00, 0x00, 0x00); 
-	  }
-	}
+        if(timer_elapsed(blink_timer) > 30) {
+            isLeaderLedOn = !isLeaderLedOn;
+            blink_timer = timer_read();
+        }	
+        if (isLeaderLedOn) {
+            for (int i=0; i < RGB_MATRIX_LED_COUNT; i++) {
+                if (leader_success_blink) rgb_matrix_set_color(i, 0x00, 0xFF, 0x00); 
+                if (leader_fail_blink) rgb_matrix_set_color(i, 0xFF, 0xFF, 0xFF); 
+            }
+        } else {
+            for (int i=0; i < RGB_MATRIX_LED_COUNT; i++) {
+                rgb_matrix_set_color(i, 0x00, 0x00, 0x00); 
+            }
+	    }
     }
     
     if(timer_elapsed(blinking_timer) > 500){
@@ -554,4 +564,5 @@ void rgb_matrix_indicators_user(void) {
 	leader_fail_blink = false;
 	isLeaderLedOn = false;
     }
+    return false;
 }
